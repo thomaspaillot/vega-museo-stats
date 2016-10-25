@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Vega museo statistique</title>
+  </head>
+  <style media="screen">
+  body {
+    font-family: 'PT Sans', 'sans-serif';
+  }
+  .bar {
+    fill: #2390df;
+  }
+
+  .bar:hover {
+    fill: #136ead;
+  }
+
+  .total-clicks {
+    background-color: #2390df;
+    padding: 16px;
+    color: white;
+    font-size: 64px;
+    font-weight: 700;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    border-radius: 3px;
+  }
+  </style>
+  <body>
+    <svg class="chart" width="1200" height="540"></svg>
+    <div class="total-clicks js-total-clicks"></div>
+    <script src="https://code.jquery.com/jquery-3.1.1.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.15.2/moment.js"></script>
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <script src="index.js"></script>
+  </body>
+</html>
