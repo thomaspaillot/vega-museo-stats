@@ -5,8 +5,13 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "serve": "browser-sync start --server 'app' --files 'app'"
+    "serve": "browser-sync start --config bs-config.js"
   },
   "author": "Thomas Paillot",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "d3": "^4.3.0",
+    "lodash": "^4.17.2",
+    "moment": "^2.16.0"
+  }
 }

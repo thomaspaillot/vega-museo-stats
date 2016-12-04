@@ -1,0 +1,75 @@
+body {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  font-family: 'PT Sans', 'sans-serif';
+  box-sizing: border-box;
+  color: #3c3c3c;
+}
+
+* {
+  box-sizing: inherit;
+}
+
+svg text {
+  fill: #3c3c3c;
+}
+
+.bar {
+  fill: #2390df;
+}
+
+.bar:hover {
+  fill: #136ead;
+}
+
+.total-clicks {
+  background-color: #2390df;
+  padding: 16px;
+  color: white;
+  font-size: 64px;
+  font-weight: 700;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  border-radius: 3px;
+}
+
+.punch-chart-container {
+  padding: 20px 0;
+}
+
+.punch-chart {
+  overflow: visible;
+}
+
+.punch-card-axe-label {
+  font-size: 12px;
+}
+
+.punch-card-punch,
+.punch-card-bar {
+  fill: rgb(21, 196, 154);
+  opacity: 0.8;
+  cursor: pointer;
+  transition: opacity 0.2s ease-in,
+}
+
+.punch-card-punch:hover,
+.punch-card-bar:hover {
+  opacity: 0.5;
+}
+
+.punch-chart-legend {
+  padding: 20px;
+}
+
+.punch-chart-legend circle {
+  fill: rgb(21, 196, 154);
+}
+
+.punch-card-line {
+  stroke: rgb(231, 231, 231);
+  stroke-weight: 1px;
+  shape-rendering: crispEdges;
+}
