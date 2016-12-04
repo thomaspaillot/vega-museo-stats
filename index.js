@@ -1,105 +1,172 @@
-$(function() {
+document.addEventListener('DOMContentLoaded', function() {
+  var MAX_RADIUS = 20;
+  var MAX_SURFACE = 2 * Math.PI * Math.pow(MAX_RADIUS, 2);
+  const startHour = 9;
+  const endHour = 18;
+  const hourSpan = 10;
+  const height = hourSpan * MAX_RADIUS*2;
+  const margin = {
+    left: 80
+  }
 
-  var svg = d3.select('svg'),
-    margin = {top: 20, right: 20, bottom: 30, left: 40},
-    width = +svg.attr('width') - margin.left - margin.right,
-    height = +svg.attr('height') - margin.top - margin.bottom;
+  fetch('data/vega-museo-stats.json')
+    .then(res => res.json())
+    .then(parseData)
+    .then(drawGraph);
 
-  var x = d3.scaleBand().rangeRound([0, width]).padding(0.1),
-      y = d3.scaleLinear().rangeRound([height, 0]);
+  function parseData(data) {
+    var startDate = moment(data[0].date).set({h: startHour, m: 0, s: 0, ms: 0});
+    var endDate = moment(data[data.length-1].date).set({h: endHour, m: 0, s: 0, ms: 0});
+    return accumulateHoursClicks(fillData(_.countBy(data, d => moment(d.date).set({m: 0, s: 0, ms: 0}).valueOf()), startDate, endDate));
+  }
 
-  var g = svg.append('g')
-      .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
-  d3.json('data/vega-museo-counter.json', function(data) {
-    var parseData = {};
-    data.forEach(function(d) {
-      if(!parseData.hasOwnProperty(d.id)) {
-        parseData[d.id] = d.counter;
-      } else {
-        parseData[d.id] += d.counter;
-      }
-    });
-
-    var parseData = Object.keys(parseData).map(function(key) {
-      return {id: key, count: parseData[key]};
-    });
-
-    parseData.sort(function (a, b) {
-      if (a.count < b.count) {
-        return 1;
-      }
-      if (a.count > b.count) {
-        return -1;
-      }
-      return 0;
-    });
-
-    var totalClicks = parseData.reduce(function(prec, current) {
-      return {count: prec.count + current.count};
-    });
-    console.log(totalClicks);
-
-    $('.js-total-clicks').html(totalClicks.count);
-
-    x.domain(parseData.map(function(d) { return d.id; }));
-    y.domain([0, d3.max(parseData, function(d) { return d.count; })]);
-
-    g.append('g')
-      .attr('class', 'axis axis--x')
-      .attr('transform', 'translate(0,' + height + ')')
-      .call(d3.axisBottom(x));
-
-    var alternate_text = false;
-    var short_tick_length = 8;
-    var long_tick_length = 20;
-    d3.selectAll('.axis.axis--x text')
-      .attr('y', function () {
-        if (alternate_text) {
-            alternate_text = false;
-            return long_tick_length + 1;
+  function fillData(data, startDate, endDate) {
+    var iterDate = startDate.clone();
+    var filledData = {};
+    while(iterDate.isBefore(endDate)) {
+      iterDay = iterDate.valueOf();
+      filledData[iterDay] = {hours: []};
+      for (var i = 0; i < hourSpan; i++) {
+        if(!data.hasOwnProperty(iterDate.valueOf())) {
+          filledData[iterDay].hours.push(0);
         } else {
-            alternate_text = true;
-            return short_tick_length + 1;
+          filledData[iterDay].hours.push(data[iterDate.valueOf()]);
         }
+        iterDate.add(1, 'hour');
+      }
+      iterDate.hour(startHour);
+      iterDate.add(1, 'day');
+    }
+
+    return filledData;
+  }
+
+  function accumulateHoursClicks(data) {
+    for(day in data) {
+      var total = _.reduce(data[day].hours, (sum, n) => sum + n, 0);
+      data[day].total = total;
+    }
+
+    return data;
+  }
+
+  function drawXLabel(x, date) {
+    d3.select('.js-punch-chart')
+      .append('text')
+      .text(date)
+      .attr('x', x)
+      .attr('y', height)
+      .attr('class', 'punch-card-axe-label')
+      .attr('text-anchor', 'middle');
+  }
+
+  function drawYLabel(y, hour) {
+    d3.select('.js-punch-chart')
+      .append('text')
+      .text(hour + 'h')
+      .attr('x', margin.left/2)
+      .attr('y', y + 3)
+      .attr('class', 'punch-card-axe-label')
+      .attr('text-anchor', 'end');
+  }
+
+  function drawLegend(scale) {
+    d3.select('.js-punch-chart-legend')
+      .append('circle')
+      .attr('r', getRadius(500, scale))
+      .attr('cx', MAX_RADIUS)
+      .attr('cy', MAX_RADIUS);
+    d3.select('.js-punch-chart-legend')
+      .append('circle')
+      .attr('r', getRadius(20, scale))
+      .attr('cx', MAX_RADIUS*3)
+      .attr('cy', MAX_RADIUS);
+    d3.select('.js-punch-chart-legend')
+      .append('text')
+      .text(500)
+      .attr('x', MAX_RADIUS)
+      .attr('y', MAX_RADIUS*2 + 20)
+      .attr('text-anchor', 'middle');
+    d3.select('.js-punch-chart-legend')
+      .append('text')
+      .text(20)
+      .attr('x', MAX_RADIUS*3)
+      .attr('y', MAX_RADIUS*2 + 20)
+      .attr('text-anchor', 'middle');
+  }
+
+  function getRadius(value, scale) {
+    var scaledSurface = MAX_SURFACE * scale(value);
+    return Math.sqrt((scaledSurface / (2 * Math.PI)));
+  };
+
+  function drawLines() {
+    for (var i = 0; i < hourSpan; i++) {
+      d3.select('.js-punch-chart').append('line')
+        .attr('x1', margin.left/2)
+        .attr('y1', (MAX_RADIUS*2*i) + MAX_RADIUS)
+        .attr('x2', '100%')
+        .attr('y2', (MAX_RADIUS*2*i) + MAX_RADIUS)
+        .attr('class', 'punch-card-line');
+    }
+  }
+
+  function drawGraph(data) {
+    d3.select('.js-punch-chart')
+      .attr('width', Object.keys(data).length * MAX_RADIUS*2)
+      .attr('height', height);
+
+    var max = d3.max(d3.entries(data), d => d3.max(d.value.hours));
+    var scale = d3.scaleLinear().domain([0, max]).range([0, 1]);
+    var x = 0;
+    var y = 0;
+
+    drawLegend(scale);
+    drawLines();
+
+    for(var day in data) {
+      drawXLabel(x + margin.left, moment(+day).format('DD/MM'));
+
+      d3.select('.js-punch-chart').append('rect')
+        .attr('width', 20)
+        .attr('height', scale(data[day].total)*100)
+        .attr('x', x + margin.left - 10)
+        .attr('y', height + 20)
+        .attr('class', 'punch-card-bar');
+
+      d3.select('.js-punch-chart')
+        .append('text')
+        .text((data[day].total || ''))
+        .attr('x', x + margin.left)
+        .attr('y', height + scale(data[day].total)*100 + 40)
+        .attr('class', 'punch-card-axe-label')
+        .attr('text-anchor', 'middle');
+
+      data[day].hours.forEach(function(h, index) {
+        if(x === 0) {
+          drawYLabel(y, index + startHour)
+        }
+
+        var radius = (getRadius(h, scale) === 0) ? 1 : getRadius(h, scale);
+        d3.select('.js-punch-chart').append('circle')
+          .attr('r', radius)
+          .attr('cx', x + margin.left)
+          .attr('cy', y)
+          .attr('class', 'punch-card-punch')
+          .append('title').text(`Clics : ${h}`);
+
+
+        y += MAX_RADIUS*2;
       });
 
-    g.append('g')
-      .attr('class', 'axis axis--y')
-      .call(d3.axisLeft(y));
-
-    g.selectAll('.bar')
-      .data(parseData)
-      .enter().append('rect')
-      .attr('class', 'bar')
-      .attr('x', function(d) { return x(d.id); })
-      .attr('y', function(d) { return y(d.count); })
-      .attr('width', x.bandwidth())
-      .attr('height', function(d) { return height - y(d.count); });
-  });
+      y = 0;
+      x += MAX_RADIUS*2;
+    }
+  }
 
 
-
-
-
-  d3.json('data/vega-museo-stats.json', function(data) {
-    var parseStats = {};
-    data = data.map(function(d) {
-      return { date: moment(d.date).startOf('day').unix(), category: d.category, id: d.id };
-    });
-    data.forEach(function(d) {
-      if(!parseStats.hasOwnProperty(d.date)) {
-        parseStats[d.date] = 1;
-      } else {
-        parseStats[d.date] += 1;
-      }
-    });
-
-    var parseStats = Object.keys(parseStats).map(function(key) {
-      return {date: moment.unix(key), count: parseStats[key]};
-    });
-    var dates = [];
-    
-    console.log(parseStats);
-  });
+  // fetch('data/vega-museo-stats.json')
+  //   .then(res => res.json())
+  //   .then(GraphClickByDate.parse)
+  //   .then(GraphClickByDate.draw);
 });
